@@ -1,0 +1,6 @@
+node_modules/
+dist/
+# Downloaded KiCad demo boards and their pcbnew dumps (mise run fixtures)
+tests/fixtures/
+# Screenshots from mise run e2e
+shots/

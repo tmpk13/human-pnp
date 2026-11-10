@@ -18,9 +18,15 @@ Decisions and non-obvious problems, with the reason for each.
   a build step it published the repository root: the browser got the source
   `index.html`, which loads `./src/main.ts`, and Cloudflare sends `.ts` as
   `video/mp2t` (MPEG transport stream), so the module never ran.
-  `wrangler.jsonc` now runs `scripts/cloudflare-build.sh` (installs mise
-  when missing, then `mise run build`) and serves only `dist/`. Its `name`
-  must match the Worker in the Cloudflare dashboard.
+  `wrangler.jsonc` now runs `scripts/cloudflare-build.sh` and serves only
+  `dist/`. Its `name` must match the Worker in the Cloudflare dashboard.
+- The Cloudflare build does not use mise: mise resolves `bun = "1.4.4"`
+  through GitHub's API, and Cloudflare's build machines share IP addresses
+  whose 60 unauthenticated calls an hour are usually gone (the first
+  Cloudflare build, which used mise, failed inside the build script). The
+  script reads the bun version
+  from `mise.toml`, installs that bun from npm, and runs `bun run build`,
+  the same `package.json` script `mise run build` runs.
 - GitHub Pages is not used; `.github/workflows/ci.yml` only tests and
   builds.
 

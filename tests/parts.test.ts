@@ -48,6 +48,10 @@ describe("classify", () => {
         expect(classify(part("ZZ1", "Resistor_SMD:R_0603_1608Metric"))).toBe("resistor");
         expect(classify(part("ZZ2", "Package_DFN_QFN:QFN-32-1EP_5x5mm"))).toBe("ic");
         expect(classify(part("REF**", "Something:Else"))).toBe("other");
+        expect(classify(part("PWR_SW1", "easyeda2kicad:SW-TH_TK-6580A8-1"))).toBe("switch");
+        expect(classify(part("I2C2", "easyeda2kicad:HDR-TH_4P-P2.54-V-F"))).toBe("connector");
+        expect(classify(part("JFP1", "wren:HARWIN_M22-6541042R"))).toBe("connector");
+        expect(classify(part("CV1", "footprints:CV3-30PF", "5/30pF"))).toBe("capacitor");
     });
 
     test("refPrefix and natural ref order", () => {

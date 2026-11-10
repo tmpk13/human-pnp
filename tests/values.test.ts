@@ -41,6 +41,17 @@ describe("quantities", () => {
         expect(parseValue("600R@100MHz", "ferrite").base).toBe("600ohm");
     });
 
+    test("a quantity later in the value is found", () => {
+        const v = res("R0402_500R_0.1%_0.05W_25PPM_VISHAY_PNM");
+        expect(v.base).toBe("500ohm");
+        expect(v.attrs).toEqual({ pkg: "0402", tol: "0.1%", w: "0.05" });
+        expect(v.extra).toBe("25ppm vishay pnm");
+        expect(cap("C0603_100nF_50V").base).toBe(cap("100n").base);
+        expect(parseValue("NTC 10k", "thermistor").base).toBe("10000ohm");
+        expect(res("R047").num).toBeCloseTo(0.047, 12);
+        expect(parseValue("IND0805_WURTH_742792040", "inductor").num).toBeUndefined();
+    });
+
     test("part numbers stay words", () => {
         expect(parseValue("2N7002", "mosfet").base).toBe("2n7002");
         expect(parseValue("1N4148W", "diode").base).toBe("1n4148w");

@@ -34,10 +34,18 @@ function paramsFor(t: RepoTarget): string {
     return `?${q.toString().replace(/%2F/g, "/")}`;
 }
 
+// Entries this app pushed carry { app: true }, so Back can tell whether the
+// previous page is the app's own or another site (a shared link).
 function go(search: string, replace = false): void {
-    if (replace) history.replaceState(null, "", search || location.pathname);
-    else history.pushState(null, "", search || location.pathname);
+    if (replace) history.replaceState(history.state, "", search || location.pathname);
+    else history.pushState({ app: true }, "", search || location.pathname);
     void route();
+}
+
+// The in-app Back button: back through the app's own pages, else home.
+function back(): void {
+    if ((history.state as { app?: boolean } | null)?.app) history.back();
+    else go("");
 }
 
 function targetFromAddress(): RepoTarget | null {
@@ -215,12 +223,12 @@ function fileItem(name: string, detail: string, href: string): HTMLElement {
 
 async function showListing(t: RepoTarget, mine: number): Promise<void> {
     const title = `${t.owner}/${t.repo}`;
-    showStatus(title, `Looking for boards in ${title}...`, () => go(""));
+    showStatus(title, `Looking for boards in ${title}...`, back);
     let listing: Listing;
     try {
         listing = await listBoards(t);
     } catch (e) {
-        if (mine === ticket) showError(title, e, () => go(""));
+        if (mine === ticket) showError(title, e, back);
         return;
     }
     if (mine !== ticket) return;
@@ -230,7 +238,7 @@ async function showListing(t: RepoTarget, mine: number): Promise<void> {
         go(paramsFor({ ...resolved, path: listing.files[0]!.path }), true);
         return;
     }
-    history.replaceState(null, "", paramsFor(resolved));
+    history.replaceState(history.state, "", paramsFor(resolved));
     const where = listing.base ? `${title}/${listing.base}` : title;
     const notes: HTMLElement[] = [];
     if (listing.truncated) {
@@ -245,7 +253,7 @@ async function showListing(t: RepoTarget, mine: number): Promise<void> {
         h(
             "div",
             { class: "screen" },
-            topbar(title, () => go("")),
+            topbar(title, back),
             h(
                 "main",
                 { class: "page listing" },
@@ -270,7 +278,6 @@ async function showListing(t: RepoTarget, mine: number): Promise<void> {
 
 async function openBoard(t: RepoTarget, mine: number): Promise<void> {
     const name = boardName(t.path ?? t.refPath ?? "");
-    const back = () => (history.length > 1 ? history.back() : go(""));
     const msg = showStatus(name, `Downloading ${name}...`, back);
     let text: string;
     let ref: string;
@@ -295,7 +302,7 @@ async function openBoard(t: RepoTarget, mine: number): Promise<void> {
         showError(name, e, back);
         return;
     }
-    if (t.refPath) history.replaceState(null, "", paramsFor({ owner: t.owner, repo: t.repo, ref, path }));
+    if (t.refPath) history.replaceState(history.state, "", paramsFor({ owner: t.owner, repo: t.repo, ref, path }));
     addRecent({ owner: t.owner, repo: t.repo, ref, path });
     const source: BoardSource = {
         name,
@@ -308,7 +315,7 @@ async function openBoard(t: RepoTarget, mine: number): Promise<void> {
 
 async function openLocal(f: File): Promise<void> {
     const name = boardName(f.name);
-    history.pushState(null, "", "?local");
+    history.pushState({ app: true }, "", "?local");
     const mine = ++ticket;
     const msg = showStatus(name, `Reading ${name}...`, () => history.back());
     await nextPaint();

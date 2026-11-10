@@ -136,7 +136,7 @@ export function showBoard(
         h("div", { class: "grip", "aria-hidden": "true" }),
         h("div", { class: "sheet-row" }, summary, toggleBtn),
     );
-    const list = h("ul", { class: "groups" });
+    const list = h("ul", { class: "groups", "aria-label": "Parts by value" });
     const sheetEl = h("section", { class: "sheet", "aria-label": "Parts" }, head, h("div", { class: "sheet-body" }, list));
     const stage = h("main", { class: "stage" }, canvas, fitBtn, sheetEl);
     const dialog = settingsDialog();
@@ -364,7 +364,7 @@ export function showBoard(
         }
         return h(
             "li",
-            { class: cls, "data-key": g.key },
+            { class: cls, "data-key": g.key, tabindex: "0", "aria-current": isSel ? "true" : undefined },
             h("span", { class: "sym-wrap", html: symbolSvg(g.kind) }),
             h(
                 "div",
@@ -416,6 +416,13 @@ export function showBoard(
             return;
         }
         select(g === selected ? null : g, null, true);
+    });
+    list.addEventListener("keydown", (e) => {
+        const t = e.target as HTMLElement;
+        if ((e.key !== "Enter" && e.key !== " ") || !t.matches("li.group")) return;
+        e.preventDefault();
+        const g = groupByKey.get(t.dataset.key ?? "");
+        if (g) select(g === selected ? null : g, null, true);
     });
     list.addEventListener("change", (e) => {
         const t = e.target as HTMLInputElement;

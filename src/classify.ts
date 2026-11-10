@@ -89,7 +89,7 @@ const TRANSISTOR_PACKAGE = /sot-?23|sot-?323|sot-?89|sot-?223|sc-?70|to-?92|to-?
 const LED_WORDS = /\bled\b|led_|_led|light emitting/;
 const CRYSTAL_WORDS = /crystal|xtal|oscillator|resonator/;
 const CONNECTOR_WORDS =
-    /connector|conn_|usb|pinheader|pin_header|pinsocket|header|jst|molex|terminalblock|terminal_block|barrel|idc|rj45|rj11|sma|u\.fl|hirose|jack|socket|receptacle|plug/;
+    /connector|conn[_-]|usb|pinheader|pin_header|pinsocket|header|hdr[_-]|jst|molex|terminalblock|terminal_block|barrel|dc-in|idc|rj45|rj11|sma|u\.fl|hirose|jack|socket|receptacle|plug/;
 
 function transistor(text: string): Kind {
     return MOSFET_WORDS.test(text) ? "mosfet" : "bjt";
@@ -136,8 +136,12 @@ export function classify(p: PartText): Kind {
         case "CP":
         case "CE":
             return "capacitor_polarized";
+        case "CV":
+        case "VC":
+            return "capacitor";
         case "L":
-            return /ferrite|bead/.test(all) ? "ferrite" : "inductor";
+            // Murata BLM, TDK MPZ/MMZ and Wurth 742792 are ferrite beads.
+            return /ferrite|bead|blm\d|mpz\d|mmz\d|742792/.test(all) ? "ferrite" : "inductor";
         case "FB":
         case "FER":
             return "ferrite";
@@ -181,6 +185,7 @@ export function classify(p: PartText): Kind {
         case "S":
         case "BTN":
         case "KEY":
+        case "PB":
             return "switch";
         case "K":
         case "RL":
@@ -229,9 +234,9 @@ export function classify(p: PartText): Kind {
     if (/^l_|inductor/.test(name) || lib.startsWith("inductor")) return "inductor";
     if (/^d_|diode/.test(name) || lib.startsWith("diode")) return "diode";
     if (CRYSTAL_WORDS.test(lib)) return "crystal";
-    if (/button|switch|^sw_/.test(lib)) return "switch";
+    if (/button|switch|^sw[-_]/.test(name)) return "switch";
     if (/fuse/.test(lib)) return "fuse";
-    if (CONNECTOR_WORDS.test(lib)) return "connector";
+    if (CONNECTOR_WORDS.test(lib) || prefix.startsWith("J")) return "connector";
     if (/soic|ssop|tssop|qfn|dfn|qfp|bga|dip|msop|sot-?23-[5-8]|package_|lga|wlcsp/.test(lib)) return "ic";
     return "other";
 }

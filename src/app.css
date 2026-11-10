@@ -113,6 +113,14 @@ input {
     font: inherit;
 }
 
+/* No double-tap zoom delay on controls. */
+button,
+label,
+.group,
+.file {
+    touch-action: manipulation;
+}
+
 a {
     color: var(--blue);
 }

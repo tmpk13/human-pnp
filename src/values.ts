@@ -105,8 +105,9 @@ interface Quantity {
 
 // A quantity at the start of `s`: "4k7", "100 nF", "2R2", "16MHz", "0.1uF".
 export function parseQuantity(s: string, defaultUnit: string): Quantity | null {
-    // Leading-R form for small resistances: R010 is 0.010 ohm.
-    const lead = /^[Rr](\d+)(?=$|[\s/_,;@()-])/.exec(s);
+    // Leading-R form for small resistances: R010 is 0.010 ohm. Four digits
+    // or more are a package code (R0402), not a value.
+    const lead = /^[Rr](\d{1,3})(?=$|[\s/_,;@()-])/.exec(s);
     if (lead && defaultUnit === "ohm") {
         return { num: Number(`0.${lead[1]}`), unit: "ohm", rest: s.slice(lead[0].length) };
     }
@@ -180,7 +181,8 @@ export function ratingOf(word: string): [string, string] | null {
     }
     if (/^(c0g|cog|np0|npo)$/.test(word)) return ["diel", "C0G"];
     if (/^(x[5-8][rstpuv]|y5v|z5u)$/.test(word)) return ["diel", word.toUpperCase()];
-    if (PACKAGES.has(word)) return ["pkg", word];
+    // Imperial size codes, also with a kind letter in front (R0402, C0603).
+    if ((m = /^[rcl]?(\d{4,5})$/.exec(word)) && PACKAGES.has(m[1]!)) return ["pkg", m[1]!];
     return null;
 }
 
@@ -197,12 +199,25 @@ export function parseValue(raw: string, kind: Kind): ParsedValue {
         rest = q.rest;
     }
     const words = rest
-        .toLowerCase()
         .split(/[\s/_,;]+/)
         .map((w) => w.replace(/^-+/, ""))
         .filter((w) => w.length > 0);
+    // A value that does not start with its quantity may still hold one as
+    // a word of its own: R0402_500R_1% has 500 ohm.
+    if (!q && unit) {
+        // Bare numbers are left alone: 742792040 is a part number.
+        const i = words.findIndex((w) => /[a-zA-Z]/.test(w) && parseQuantity(w, unit)?.rest === "");
+        if (i >= 0) {
+            const wq = parseQuantity(words[i]!, unit)!;
+            out.num = wq.num;
+            out.unit = wq.unit;
+            out.base = `${canon(wq.num)}${wq.unit}`;
+            words.splice(i, 1);
+        }
+    }
     const extra: string[] = [];
-    for (const w of words) {
+    for (const word of words) {
+        const w = word.toLowerCase();
         if (DNP_WORDS.has(w)) {
             out.dnp = true;
             continue;

@@ -1,0 +1,12 @@
+// Cloudflare Worker that serves the built site (dist/) as static assets.
+// "name" must match the Worker that hpnp.tmpk.sh is attached to.
+{
+    "name": "human-pnp",
+    "compatibility_date": "2026-11-01",
+    "build": {
+        "command": "bash scripts/cloudflare-build.sh"
+    },
+    "assets": {
+        "directory": "./dist"
+    }
+}

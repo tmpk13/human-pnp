@@ -13,4 +13,4 @@
 - Settings: loose ratings, match footprint, pads, labels, solarized light/dark/auto
 - Local .kicad_pcb files and recent boards on the home screen
 - Browser checks in headless Chromium at phone and desktop size
-- GitHub Pages workflow
+- Cloudflare build config (wrangler.jsonc) and a CI workflow

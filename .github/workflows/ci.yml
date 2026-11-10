@@ -1,0 +1,22 @@
+# Unit tests, type check and a build on every push and pull request, with
+# the tools pinned in mise.toml. The site itself is built and served by
+# Cloudflare (wrangler.jsonc).
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: jdx/mise-action@v5
+      - run: mise run test
+      - run: mise run check
+      - run: mise run build

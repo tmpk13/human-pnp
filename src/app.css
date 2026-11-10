@@ -104,8 +104,15 @@ body {
     color: var(--fg);
     font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
     font-size: 100%;
-    -webkit-text-size-adjust: 100%;
     overscroll-behavior: none;
+}
+
+/* Keep iOS from enlarging text in landscape; inside @supports so browsers
+   without the property do not log a parse warning. */
+@supports (-webkit-text-size-adjust: 100%) {
+    html {
+        -webkit-text-size-adjust: 100%;
+    }
 }
 
 button,

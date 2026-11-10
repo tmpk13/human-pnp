@@ -11,12 +11,12 @@ depends = ["install"]
 run = "bun --port=3000 ./index.html"
 
 [tasks.build]
-description = "Bundle the site into dist/ (what GitHub Pages serves)"
+description = "Bundle the site into dist/ (what Cloudflare serves)"
 depends = ["install"]
 run = "rm -rf dist && bun build ./index.html --outdir=dist --sourcemap=linked"
 
 [tasks.preview]
-description = "Serve the built dist/ folder on http://localhost:3001 under /human-pnp/ like GitHub Pages"
+description = "Serve the built dist/ folder on port 3001 under /human-pnp/ (proves it works below a site root), on every interface"
 depends = ["build"]
 run = "bun run scripts/serve.ts dist 3001"
 

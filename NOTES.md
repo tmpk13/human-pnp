@@ -9,9 +9,20 @@ Decisions and non-obvious problems, with the reason for each.
   TypeScript is fast enough (an 85 MB board in 0.64 s, a 6 MB board in
   17 ms under bun), so a WASM toolchain would add build steps for nothing.
 - `bun build ./index.html` bundles the page and writes relative asset URLs
-  (`./index-<hash>.js`), so the same `dist/` works at the site root and
-  under `/<repo>/` on GitHub Pages. No minification: debug builds only,
-  with source maps.
+  (`./index-<hash>.js`), so the same `dist/` works at a site root and below
+  one. No minification: debug builds only, with source maps.
+
+## Hosting
+
+- https://hpnp.tmpk.sh is a Cloudflare Worker serving static assets. Without
+  a build step it published the repository root: the browser got the source
+  `index.html`, which loads `./src/main.ts`, and Cloudflare sends `.ts` as
+  `video/mp2t` (MPEG transport stream), so the module never ran.
+  `wrangler.jsonc` now runs `scripts/cloudflare-build.sh` (installs mise
+  when missing, then `mise run build`) and serves only `dist/`. Its `name`
+  must match the Worker in the Cloudflare dashboard.
+- GitHub Pages is not used; `.github/workflows/ci.yml` only tests and
+  builds.
 
 ## Reading .kicad_pcb files
 
@@ -77,10 +88,10 @@ Decisions and non-obvious problems, with the reason for each.
   Folder links try each split, shortest ref first, against the tree API.
   File links need no splitting: every split gives the same raw URL and
   GitHub resolves the ref.
-- No GitHub token setting: every project site of an account shares the
-  `<user>.github.io` origin and its localStorage, so a stored token would be
-  readable by the owner's other project pages. Storage keys carry a
-  `human-pnp:` prefix for the same reason.
+- No GitHub token setting: a token kept in localStorage is readable by any
+  script on the same origin, and on GitHub Pages every project site of an
+  account shares `<user>.github.io`. Storage keys carry a `human-pnp:`
+  prefix for the same reason.
 
 ## Values and matching
 

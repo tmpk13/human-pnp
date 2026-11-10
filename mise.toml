@@ -33,3 +33,8 @@ run = "bun x tsc --noEmit -p ."
 [tasks.fixtures]
 description = "Download KiCad 4-10 demo boards and dump pcbnew ground truth for the fixture tests (needs KiCad)"
 run = "scripts/fixtures.sh"
+
+[tasks.e2e]
+description = "Build, then drive the site in headless Chromium at phone and desktop size (screenshots in shots/)"
+depends = ["build"]
+run = "E2E=1 bun test tests/e2e.test.ts"

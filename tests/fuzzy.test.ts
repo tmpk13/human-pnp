@@ -39,6 +39,11 @@ describe("matchFields", () => {
         expect(matchFields(terms("1uf 50v"), fields)).toBe(0);
         expect(matchFields(terms("  0603  "), fields)).toBeGreaterThan(0);
     });
+
+    test("a bonus can score a term the fields miss", () => {
+        expect(matchFields(terms("0.1u"), fields)).toBe(0);
+        expect(matchFields(terms("0.1u"), fields, () => 25)).toBe(25);
+    });
 });
 
 describe("topMatches", () => {

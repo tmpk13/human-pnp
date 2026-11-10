@@ -85,11 +85,12 @@ export function terms(query: string): string[] {
 }
 
 // Sum over the query terms of each term's best weighted field score; 0
-// when some term matches no field.
-export function matchFields(queryTerms: string[], fields: Field[]): number {
+// when some term matches no field. `bonus` can score a term by other means
+// (such as reading it as a part value); the higher score counts.
+export function matchFields(queryTerms: string[], fields: Field[], bonus?: (term: string) => number): number {
     let total = 0;
     for (const term of queryTerms) {
-        let best = 0;
+        let best = bonus ? bonus(term) : 0;
         for (const f of fields) {
             if (!f.text) continue;
             const s = fuzzyScore(term, f.text) * f.weight;

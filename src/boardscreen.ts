@@ -7,7 +7,7 @@ import { KIND_INFO } from "./classify";
 import { h, ICONS } from "./dom";
 import { matchFields, terms, topMatches, type Field } from "./fuzzy";
 import type { Board, Side } from "./kicad";
-import { buildGroups, makeParts, relatedGroups, type Group, type Part } from "./parts";
+import { buildGroups, makeParts, progressByKind, relatedGroups, type Group, type Part } from "./parts";
 import { Sheet } from "./sheet";
 import { loadPlaced, savePlaced, saveSettings, type Settings, type Theme } from "./store";
 import { symbolSvg } from "./symbols";
@@ -26,6 +26,10 @@ export interface BoardSource {
 }
 
 const SIDE_NAME: Record<Side, string> = { F: "top", B: "bottom" };
+
+// Progress bar segment colors, given out in list order so neighboring
+// segments always differ. The parts list's section headers repeat them.
+const SEGMENT_COLORS = ["blue", "cyan", "green", "yellow", "orange", "magenta", "violet", "red"];
 
 export function readPalette(): Palette {
     const cs = getComputedStyle(document.documentElement);
@@ -89,6 +93,11 @@ export function showBoard(
         ]),
     );
     const placed = loadPlaced(source.key);
+    // Which kinds the progress bar shows never changes: placing marks only
+    // fill the segments in.
+    const kindColor = new Map(
+        progressByKind(parts, placed).map((k, i) => [k.kind, `var(--${SEGMENT_COLORS[i % SEGMENT_COLORS.length]})`]),
+    );
     const state: ViewState = {
         highlight: new Set(),
         focus: null,
@@ -130,11 +139,13 @@ export function showBoard(
     const fitBtn = h("button", { class: "icon-btn float fit", "aria-label": "Show the whole board", html: ICONS.fit });
     const summary = h("div", { class: "summary", "aria-live": "polite" });
     const toggleBtn = h("button", { class: "icon-btn sheet-toggle", "aria-label": "Collapse or expand the parts list" });
+    const progress = h("div", { class: "progress", role: "progressbar", "aria-label": "Parts placed", "aria-valuemin": "0" });
     const head = h(
         "div",
         { class: "sheet-head" },
         h("div", { class: "grip", "aria-hidden": "true" }),
         h("div", { class: "sheet-row" }, summary, toggleBtn),
+        progress,
     );
     const list = h("ul", { class: "groups", "aria-label": "Parts by value" });
     const sheetEl = h("section", { class: "sheet", "aria-label": "Parts" }, head, h("div", { class: "sheet-body" }, list));
@@ -255,6 +266,7 @@ export function showBoard(
         savePlaced(source.key, placed);
         renderList();
         renderSummary();
+        renderProgress();
         view.redraw();
     }
 
@@ -322,6 +334,32 @@ export function showBoard(
                 ),
             );
         }
+    }
+
+    // One segment per kind, as wide as its share of the parts to place,
+    // filled by the share of them placed.
+    function renderProgress(): void {
+        const kinds = progressByKind(parts, placed);
+        const total = kinds.reduce((n, k) => n + k.total, 0);
+        const done = kinds.reduce((n, k) => n + k.done, 0);
+        progress.hidden = total === 0;
+        progress.setAttribute("aria-valuemax", String(total));
+        progress.setAttribute("aria-valuenow", String(done));
+        progress.setAttribute("aria-valuetext", `${done} of ${total} placed`);
+        progress.replaceChildren(
+            ...kinds.map((k) =>
+                h(
+                    "div",
+                    {
+                        class: "progress-seg",
+                        "data-kind": k.kind,
+                        title: `${KIND_INFO[k.kind].label}: ${k.done} of ${k.total} placed`,
+                        style: `--seg: ${kindColor.get(k.kind)}; flex-grow: ${k.total}`,
+                    },
+                    h("div", { class: "progress-fill", style: `width: ${(100 * k.done) / k.total}%` }),
+                ),
+            ),
+        );
     }
 
     function groupRow(g: Group): HTMLElement {
@@ -393,7 +431,9 @@ export function showBoard(
         for (const g of shown) {
             const name = g.dnp ? "Do not place" : KIND_INFO[g.kind].label;
             if (!hits && name !== section) {
-                items.push(h("li", { class: "section" }, name));
+                const color = g.dnp ? undefined : kindColor.get(g.kind);
+                const swatch = color ? h("span", { class: "kind-swatch", style: `--seg: ${color}`, "aria-hidden": "true" }) : null;
+                items.push(h("li", { class: "section" }, swatch, name));
                 section = name;
             }
             items.push(groupRow(g));
@@ -518,6 +558,7 @@ export function showBoard(
 
     renderList();
     renderSummary();
+    renderProgress();
     // Read-only handle for debugging in the console and for the browser
     // checks (scripts/e2e.ts).
     (window as unknown as { humanPnp: unknown }).humanPnp = { view, parts, groups: () => groups };

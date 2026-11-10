@@ -430,6 +430,48 @@ a {
     font-size: 0.85rem;
 }
 
+/* Placing progress: one segment per kind of part, its color (--seg, set
+   inline) pale for the parts left and solid for the parts placed. */
+.progress {
+    display: flex;
+    gap: 0.15rem;
+    height: 0.3rem;
+    margin-top: 0.25rem;
+}
+
+.progress-seg {
+    position: relative;
+    flex: 1 1 0;
+    min-width: 0.3rem;
+    overflow: hidden;
+    border-radius: 0.15rem;
+}
+
+.progress-seg::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: var(--seg);
+    opacity: 0.25;
+}
+
+.progress-fill {
+    position: relative;
+    height: 100%;
+    background: var(--seg);
+    transition: width 0.2s ease-out;
+}
+
+.kind-swatch {
+    display: inline-block;
+    width: 0.9em;
+    height: 0.35em;
+    margin-right: 0.45em;
+    vertical-align: middle;
+    border-radius: 0.15rem;
+    background: var(--seg);
+}
+
 .sheet-body {
     flex: 1;
     min-height: 0;

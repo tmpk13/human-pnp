@@ -14,3 +14,4 @@
 - Local .kicad_pcb files and recent boards on the home screen
 - Browser checks in headless Chromium at phone and desktop size
 - Cloudflare build config (wrangler.jsonc) and a CI workflow
+- Placing progress bar in the parts sheet, one colored segment per kind of part

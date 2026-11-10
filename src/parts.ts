@@ -100,6 +100,30 @@ export function buildGroups(parts: Part[], byFootprint: boolean): Group[] {
     return groups.sort(groupOrder);
 }
 
+export interface KindProgress {
+    kind: Kind;
+    // Parts of this kind to place, and how many of them are marked placed.
+    total: number;
+    done: number;
+}
+
+// Placing progress per kind over the parts to place (listed, not DNP), in
+// list order. Kinds with nothing to place are left out.
+export function progressByKind(parts: Part[], placed: ReadonlySet<string>): KindProgress[] {
+    const byKind = new Map<Kind, KindProgress>();
+    for (const p of parts) {
+        if (!p.placeable || p.dnp) continue;
+        let k = byKind.get(p.kind);
+        if (!k) {
+            k = { kind: p.kind, total: 0, done: 0 };
+            byKind.set(p.kind, k);
+        }
+        k.total++;
+        if (placed.has(p.fp.ref)) k.done++;
+    }
+    return [...byKind.values()].sort((a, b) => KIND_INFO[a.kind].order - KIND_INFO[b.kind].order);
+}
+
 // Groups holding the same part as `g`: only `g` itself in strict matching;
 // in loose matching also groups that leave out a rating `g` gives or give
 // one `g` leaves out.

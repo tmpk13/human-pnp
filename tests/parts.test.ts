@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { classify, refPrefix, type PartText } from "../src/classify";
 import { parseBoard } from "../src/kicad";
-import { buildGroups, compareRefs, makeParts, relatedGroups, type Group } from "../src/parts";
+import { buildGroups, compareRefs, makeParts, progressByKind, relatedGroups, type Group } from "../src/parts";
 
 const part = (ref: string, lib: string, value = "", descr = "", props: Record<string, string> = {}): PartText => ({
     ref,
@@ -111,5 +111,20 @@ describe("groups on the sample board", () => {
         const caps = groups.filter((g) => g.kind === "capacitor").map((g) => g.label);
         expect(caps.indexOf("12pF")).toBeLessThan(caps.indexOf("100nF"));
         expect(caps.indexOf("100nF")).toBeLessThan(caps.indexOf("1uF"));
+    });
+
+    test("progress per kind counts parts to place, in list order", () => {
+        const none = progressByKind(parts, new Set());
+        const kinds = none.map((k) => k.kind);
+        expect(kinds.indexOf("resistor")).toBeLessThan(kinds.indexOf("capacitor"));
+        expect(none.every((k) => k.done === 0 && k.total > 0)).toBe(true);
+        // Every listed part that is not DNP is counted once; holes and the
+        // DNP resistor R11 are not.
+        const todo = groups.filter((g) => !g.dnp).flatMap((g) => g.parts);
+        expect(none.reduce((n, k) => n + k.total, 0)).toBe(todo.length);
+        const res = (s: Set<string>) => progressByKind(parts, s).find((k) => k.kind === "resistor")!;
+        expect(res(new Set()).total).toBe(todo.filter((p) => p.kind === "resistor").length);
+        // Marks on DNP parts, holes or unknown references do not count.
+        expect(res(new Set(["R1", "R9", "R11", "H1", "NOPE"])).done).toBe(2);
     });
 });

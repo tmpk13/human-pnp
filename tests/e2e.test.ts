@@ -136,6 +136,10 @@ describe.skipIf(!enabled)("site in Chromium", () => {
         await boardReady(page);
         expect(page.url()).toContain("path=sample/sample.kicad_pcb");
         expect(await summary(page)).toContain("48 parts");
+        const bar = page.locator(".progress");
+        expect(await bar.getAttribute("aria-valuemax")).toBe("48");
+        expect(await bar.getAttribute("aria-valuenow")).toBe("0");
+        expect(await bar.locator(".progress-seg").count()).toBeGreaterThan(3);
         await shot(page, "03-board");
 
         // Two-finger pinch zooms in around the fingers and selects nothing.
@@ -236,6 +240,10 @@ describe.skipIf(!enabled)("site in Chromium", () => {
         await page.locator(".group", { hasText: "27R" }).locator("input.placed-check").check();
         await page.click("button[aria-label='Clear selection']");
         expect(await summary(page)).toContain("3 placed");
+        expect(await bar.getAttribute("aria-valuenow")).toBe("3");
+        const fill = bar.locator(".progress-seg[data-kind=resistor] .progress-fill");
+        expect((await fill.boundingBox())!.width).toBeGreaterThan(0);
+        expect((await bar.locator(".progress-seg[data-kind=capacitor] .progress-fill").boundingBox())!.width).toBe(0);
         await shot(page, "11-placed");
 
         // Placed marks survive a reload.

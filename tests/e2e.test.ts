@@ -138,6 +138,35 @@ describe.skipIf(!enabled)("site in Chromium", () => {
         expect(await summary(page)).toContain("48 parts");
         await shot(page, "03-board");
 
+        // Two-finger pinch zooms in around the fingers and selects nothing.
+        const gapBetween = async () => {
+            const [a, b] = await page.evaluate(() => {
+                const v = (window as unknown as { humanPnp: { view: { screenPosOf(r: string): [number, number] } } }).humanPnp.view;
+                return [v.screenPosOf("C1"), v.screenPosOf("C2")];
+            });
+            return Math.hypot(a[0] - b[0], a[1] - b[1]);
+        };
+        const gap0 = await gapBetween();
+        const cbox = (await page.locator("canvas.board-canvas").boundingBox())!;
+        const cx = cbox.x + cbox.width / 2;
+        const cy = cbox.y + cbox.height / 3;
+        const cdp = await ctx.newCDPSession(page);
+        const touch = (type: "touchStart" | "touchMove" | "touchEnd", d: number) =>
+            cdp.send("Input.dispatchTouchEvent", {
+                type,
+                touchPoints: type === "touchEnd" ? [] : [{ x: cx - d, y: cy, id: 1 }, { x: cx + d, y: cy, id: 2 }],
+            });
+        await touch("touchStart", 30);
+        for (let i = 1; i <= 10; i++) await touch("touchMove", 30 + i * 8);
+        await touch("touchEnd", 0);
+        await page.waitForTimeout(100);
+        const ratio = (await gapBetween()) / gap0;
+        expect(ratio).toBeGreaterThan(3);
+        expect(ratio).toBeLessThan(4.5);
+        expect(await summary(page)).toContain("48 parts");
+        await page.click("button.fit");
+        await page.waitForTimeout(400);
+
         // No sideways scrolling at phone width.
         const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
         expect(overflow).toBeLessThanOrEqual(0);
@@ -224,6 +253,19 @@ describe.skipIf(!enabled)("site in Chromium", () => {
         expect(errors).toEqual([]);
         await ctx.close();
     }, 90_000);
+
+    test("a local file opens without GitHub", async () => {
+        const errors: string[] = [];
+        const { ctx, page } = await newPage({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true }, errors);
+        await page.goto(base);
+        await page.locator("input[type=file]").setInputFiles(join(data, "legacy-k5.kicad_pcb"));
+        await boardReady(page);
+        expect(await summary(page)).toContain("7 parts");
+        await page.locator(".topbar button[aria-label=Back]").click();
+        await page.locator("#gh-link").waitFor();
+        expect(errors).toEqual([]);
+        await ctx.close();
+    }, 30_000);
 
     test("dark theme and a desktop window", async () => {
         const errors: string[] = [];

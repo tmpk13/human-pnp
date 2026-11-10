@@ -876,7 +876,9 @@ export class BoardView {
                     ctx.globalAlpha = 0.88;
                     ctx.fillStyle = p.labelBg;
                     ctx.beginPath();
-                    ctx.roundRect(r.x - 3, r.y, r.w + 6, r.h, h / 3);
+                    // roundRect is missing before iOS 16.
+                    if (ctx.roundRect) ctx.roundRect(r.x - 3, r.y, r.w + 6, r.h, h / 3);
+                    else ctx.rect(r.x - 3, r.y, r.w + 6, r.h);
                     ctx.fill();
                 }
                 ctx.globalAlpha = dim && !it.important ? 0.4 : 1;
